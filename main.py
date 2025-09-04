@@ -395,4 +395,4 @@ if __name__ == "__main__":
         input("Введите ENTER для завершения")
     except Exception:
         traceback.print_exc()
-        #input("Скопируйте ошибку для отправки и нажмите ENTER")
+        input("Скопируйте ошибку для отправки и нажмите ENTER")
