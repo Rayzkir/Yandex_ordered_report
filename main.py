@@ -9,8 +9,7 @@ import shutil
 import zipfile
 from tqdm import tqdm
 import pandas as pd
-import traceback
-from datetime import date,datetime
+from datetime import date
 from dateutil.relativedelta import relativedelta
 import locale
 import calendar
@@ -251,17 +250,11 @@ def create_united_netting_report(bank_order_id,date_of_report):
 def main():
     print("Начинаем обработку Yandex Market")
     month_input = input("Введите месяц (например: апрель): ").strip().lower()
-    year_input = 2025
-
-    first_day = datetime.strptime(f"{month_input} {year_input}", "%B %Y").date()
-    last_day_num = calendar.monthrange(year_input, first_day.month)[1]
-    last_day = date(year_input, first_day.month, last_day_num)
-
-    date_from = last_day - relativedelta(months=3)
-    date_to = last_day
+    date_from = date.today() - relativedelta(months=3)
+    date_to = date.today()
 
     folder_path = resource_path("DATA")
-    month = date_to.strftime("%B")
+    month = month_input
 
     df_onec = pd.read_excel(f"{folder_path}\\{month}\\Заказы 1С {month} ЯМ.xlsx") \
         .dropna(subset=["Номер"]).drop(columns=["Комментарий"])
@@ -283,6 +276,7 @@ def main():
 
     report_id = create_yandex_report(date_from=str(date_from), date_to=str(date_to))
     df = get_yandex_report(report_id=report_id)
+    df.to_excel(f"{folder_path}\\{month}\\Заказы из ЛК ЯМ.xlsx",index = False)
     df.rename(columns={
         'PARTNER_ORDER_ID': "Номер",
         "OFFER_STATUS": "Статус заказа",
@@ -327,7 +321,6 @@ def main():
             reports = {}
 
         bank_id_str = str(bank_id)
-
         if bank_id_str in reports:
             report_id = reports[bank_id_str]
             print(f"Нашли в JSON: {bank_id} -> {report_id}")
@@ -382,7 +375,7 @@ def main():
     manager_counts = combined.groupby("Номер по данным клиента")["Автор"].transform(lambda x: x.isin(MENEGERS).sum())
 
     combined.loc[
-        (combined["Автор"] == "reglament_yandex_market") & (manager_counts > 0), "Статус заказа"] = "Отменен"
+        (combined["Автор"] == "ВО_ИнтеграцияСЯндексМаркет_ЗагрузитьЗаказыИзЯндексМаркет") & (manager_counts > 0), "Статус заказа"] = "Отменен"
 
     if "Комментарий" not in combined.columns:
         combined["Комментарий"] = ''
@@ -393,6 +386,6 @@ if __name__ == "__main__":
     try:
         main()
         input("Введите ENTER для завершения")
-    except Exception:
-        traceback.print_exc()
+    except Exception as e:
+        print(f"Error: {e}")
         input("Скопируйте ошибку для отправки и нажмите ENTER")
